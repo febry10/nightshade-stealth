@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Nightshade — Silent Infiltration</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #0b0d16;
+    color: #e8e6f0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  #wrap { width: 960px; padding: 8px 0 4px; }
+  h1 {
+    margin: 0 0 6px;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: #c9a7ff;
+    text-transform: uppercase;
+  }
+  h1 span { color: #8a8f9e; font-size: 13px; letter-spacing: 1px; }
+  #hud {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    background: #171a26;
+    border: 1px solid #2c3044;
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  #hud .stat b { color: #c9a7ff; }
+  #hud-detect { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 180px; }
+  #hud-detect-bar {
+    flex: 1;
+    height: 10px;
+    background: #262a3a;
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  #hud-detect-fill { height: 100%; width: 0%; background: #39d98a; transition: width 0.15s; }
+  #hud-detect-fill.warm { background: #ffb84d; }
+  #hud-detect-fill.alarm { background: #ff4040; }
+  #hud-detect-label { font-weight: bold; color: #39d98a; min-width: 64px; }
+  #hud-detect-label.alarm-text { color: #ff5a5a; }
+  #hud-msg {
+    font-size: 13px;
+    color: #aab0c6;
+    min-height: 18px;
+    margin: 0 0 6px;
+  }
+  #stage { position: relative; width: 960px; height: 576px; }
+  canvas {
+    display: block;
+    width: 960px;
+    height: 576px;
+    background: #20242f;
+    border: 1px solid #2c3044;
+    border-radius: 8px;
+  }
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: rgba(8, 9, 18, 0.82);
+    border-radius: 8px;
+    padding: 24px;
+  }
+  .screen.hidden { display: none; }
+  .screen h2 { margin: 0 0 10px; font-size: 30px; color: #c9a7ff; letter-spacing: 2px; }
+  .screen p { margin: 6px 0; max-width: 560px; line-height: 1.5; color: #c6c9d8; }
+  .screen .keys { font-size: 13px; color: #9aa0b5; }
+  .screen .keys b { color: #e8e6f0; }
+  .screen button {
+    margin-top: 16px;
+    padding: 11px 26px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #14092b;
+    background: #b78cff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .screen button:hover { background: #cfaaff; }
+  .screen button.ghost {
+    background: transparent;
+    color: #c9a7ff;
+    border: 1px solid #5b4a86;
+    font-size: 13px;
+    padding: 8px 18px;
+  }
+  #help {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #8a8f9e;
+    text-align: center;
+  }
+  #help b { color: #b9bdd0; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h1>Nightshade <span>— Silent Infiltration</span></h1>
+  <div id="hud">
+    <span class="stat" id="hud-level"><b>The Gallery</b></span>
+    <span class="stat" id="hud-artifacts"><b>◆ 0/2</b></span>
+    <span id="hud-detect">
+      <span id="hud-detect-label">UNSEEN</span>
+      <span id="hud-detect-bar"><span id="hud-detect-fill"></span></span>
+    </span>
+    <span class="stat" id="hud-time"><b>0:00</b></span>
+    <span class="stat" id="hud-score"><b>Score 0</b></span>
+    <button id="btn-mute" style="background:#262a3a;color:#c9a7ff;border:1px solid #3a3f52;border-radius:6px;padding:4px 10px;cursor:pointer;">Sound: On (M)</button>
+  </div>
+  <p id="hud-msg">Steal every artifact, then reach the exit unseen.</p>
+  <div id="stage">
+    <canvas id="game" width="960" height="576"></canvas>
+
+    <div class="screen" id="screen-title">
+      <h2>NIGHTSHADE</h2>
+      <p><b>Silent Infiltration.</b> The city sleeps, the halls are guarded, and three
+      treasures wait in the dark. You are the thief they will never see.</p>
+      <p>Slip past the guards' lantern cones, hide in the shadows, steal every
+      artifact and reach the glowing exit — without ever being caught.</p>
+      <p class="keys">
+        <b>WASD / Arrows</b> move &nbsp;·&nbsp; <b>Shift</b> sneak (slow, quiet, hard to spot)
+        &nbsp;·&nbsp; <b>X</b> run (fast, loud) &nbsp;·&nbsp; <b>E</b> take artifact
+        &nbsp;·&nbsp; <b>P</b> pause &nbsp;·&nbsp; <b>R</b> restart level &nbsp;·&nbsp; <b>M</b> mute
+      </p>
+      <button id="btn-start">Begin the Night →</button>
+      <p class="keys">Three missions: The Gallery · The Manor · The Vault</p>
+    </div>
+
+    <div class="screen hidden" id="screen-pause">
+      <h2>PAUSED</h2>
+      <p>The night waits for you.</p>
+      <button id="btn-resume">Resume</button>
+      <button class="ghost" id="btn-quit">Quit to Title</button>
+    </div>
+
+    <div class="screen hidden" id="screen-level">
+      <h2 id="level-title">Clean Getaway</h2>
+      <p id="level-detail"></p>
+      <p id="level-score"></p>
+      <button id="btn-next">Next mission →</button>
+    </div>
+
+    <div class="screen hidden" id="screen-caught">
+      <h2 style="color:#ff6b6b;">CAUGHT</h2>
+      <p id="caught-text"></p>
+      <button id="btn-retry">Try Again (R)</button>
+      <button class="ghost" id="btn-title">Back to Title</button>
+    </div>
+
+    <div class="screen hidden" id="screen-win">
+      <h2 style="color:#7de3ff;">THE NIGHT IS YOURS</h2>
+      <p id="win-detail"></p>
+      <p id="win-score"></p>
+      <button id="btn-again">Play Again</button>
+    </div>
+  </div>
+  <p id="help">
+    <b>WASD / Arrows</b> move · <b>Shift</b> sneak · <b>X</b> run · <b>E</b> take artifact ·
+    <b>P</b> pause · <b>R</b> restart · <b>M</b> mute — Shadows slow detection. Running is loud.
+  </p>
+</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
